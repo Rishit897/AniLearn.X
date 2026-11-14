@@ -44,7 +44,8 @@ app.use('/api/chat', require('./routes/chat'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/generation', require('./routes/generation'));
 app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/settings', require('./routes/settings));
+app.use('/api/settings', require('./routes/settings'));
+
 
 app.get('/health', (req, res) => {
   const supabaseLive = envStatus['SUPABASE_URL'] === 'live' && envStatus['SUPABASE_SERVICE_ROLE_KEY'] === 'live';
