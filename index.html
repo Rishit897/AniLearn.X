@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AniLearn.X — AI-Powered Educational Anime Video Platform</title>
+<style>
+  /* ── Design tokens (light commercial theme) ── */
+  :root{
+    --bg:#f8fafc;
+    --bg2:#ffffff;
+    --bg3:#f1f5f9;
+    --border:#e2e8f8;
+    --ink:#0f172a;
+    --muted:#64748b;
+    --ring:#cbd5e1;
+
+    --ice:#0ea5e9;        /* ice blue */
+    --lavender:#a78bfa;   /* lavender */
+    --mint:#10b981;       /* mint */
+    --pink:#f472b6;       /* soft pink */
+    --amber:#fbbf24;
+
+    --ice-dark:#0284c7;
+    --lavender-dark:#7c3aed;
+    --mint-dark:#047857;
+    --pink-dark:#be185d;
+
+    --radius:14px;
+    --shadow:0 10px 30px -10px rgba(2,6,23,0.08);
+    --shadow-lg:0 20px 50px -10px rgba(2,6,23,0.12);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    min-height:100vh;overflow-x:hidden
+  }
+  ::-webkit-scrollbar{width:6px}
+  ::-webkit-scrollbar-track{background:#f1f5f9}
+  ::-webkit-scrollbar-thumb{background:var(--lavender);border-radius:3px}
+
+  a{color:inherit;text-decoration:none}
+  button{cursor:pointer;font-family:inherit;border:none;background:none}
+
+  /* ── Navigation ── */
+  nav{
+    position:sticky;top:0;z-index:60;background:rgba(255,255,255,0.82);
+    backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.7rem 1.5rem;
+    display:flex;align-items:center;justify-content:space-between
+  }
+  .logo{font-size:1.25rem;font-weight:800;letter-spacing:.02em;color:var(--ink)}
+  .logo span{background:linear-gradient(90deg,var(--ice),var(--lavender));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .nav-left{display:flex;align-items:center;gap:1rem}
+  .nav-item{font-size:.86rem;font-weight:700;color:var(--muted);padding:.35rem .8rem;border-radius:10px;transition:all .2s}
+  .nav-item.active{background:var(--ice);color:#fff;box-shadow:0 0 20px #0ea5e955}
+  .nav-item:hover:not(.active){background:var(--bg3);color:var(--ink)}
+  .nav-right{display:flex;align-items:center;gap:.6rem}
+  .nav-badge{font-size:.68rem;font-weight:800;padding:.25rem .7rem;border-radius:20px;background:var(--bg3);color:var(--muted);border:1px solid var(--border)}
+  .nav-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--ice),var(--lavender));display:grid;place-items:center;color:#fff;font-weight:800;font-size:.8rem;cursor:pointer;border:1px solid var(--border);transition:transform .2s}
+  .nav-avatar:hover{transform:scale(1.08)}
+  .nav-avatar.guest{background:var(--bg3);color:var(--muted)}
+
+  /* ── Auth overlay ── */
+  #authOverlay{position:fixed;inset:0;z-index:100;background:rgba(15,23,42,0.45);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:1;transition:opacity .3s}
+  #authOverlay.hide{opacity:0;pointer-events:none}
+  .auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:430px;overflow:hidden;box-shadow:var(--shadow-lg);animation:cardUp .45s cubic-bezier(.34,1.56,.64,1) both}
+  @keyframes cardUp{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+  .auth-top{padding:2rem 2rem 1.5rem;text-align:center;border-bottom:1px solid var(--border)}
+  .auth-logo{display:inline-flex;align-items:center;gap:.6rem;margin-bottom:1rem}
+  .auth-logo .mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--ice),var(--lavender));display:grid;place-items:center;color:#fff;font-weight:900;font-size:1.1rem;box-shadow:0 0 16px #0ea5e944}
+  .auth-name{font-size:1.15rem;font-weight:800;color:var(--ink)}
+  .auth-name span{background:linear-gradient(90deg,var(--ice),var(--lavender));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .auth-headline{font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:.35rem}
+  .auth-sub{font-size:.82rem;color:var(--muted);line-height:1.5}
+  .auth-body{padding:1.5rem 2rem}
+  .divider{display:flex;align-items:center;gap:1rem;margin:1.25rem 0;color:var(--muted);font-size:.72rem}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+  .btn-oauth{width:100%;display:flex;align-items:center;justify-content:center;gap:.75rem;background:var(--bg2);border:1px solid var(--border);color:var(--ink);font-size:.88rem;font-weight:700;padding:.8rem 1.2rem;border-radius:11px;cursor:pointer;transition:all .2s;font-family:inherit}
+  .btn-oauth:hover{background:var(--bg3);border-color:var(--ring);box-shadow:0 4px 16px rgba(2,6,23,0.06)}
+  .btn-oauth.email{background:linear-gradient(135deg,var(--ice),var(--lavender));color:#fff;box-shadow:0 0 20px #0ea5e944}
+  .btn-oauth.email:hover{box-shadow:0 0 30px #0ea5e966;transform:translateY(-1px)}
+  .auth-footer{font-size:.72rem;color:var(--muted);text-align:center;line-height:1.55;padding:1rem 2rem}
+  .auth-footer a{color:var(--ice-dark);text-decoration:none;font-weight:700}
+  .auth-toggle{display:block;text-align:center;margin-top:.8rem;font-size:.75rem;color:var(--muted)}
+  .auth-toggle button{color:var(--ice-dark);text-decoration:underline;text-underline-offset:2px;background:none;border:none;cursor:pointer;font-size:inherit;font-weight:700;padding:0}
+  .err-msg{font-size:.72rem;color:#ef4444;font-weight:700;margin-top:.5rem;display:none;text-align:center}
+  .err-msg.show{display:block}
+
+  /* ── Layout helpers ── */
+  .section{display:none;padding:1.5rem 1rem 3rem;max-width:1300px;margin:0 auto}
+  .section.active{display:block}
+  .page-title{font-size:1.5rem;font-weight:800;letter-spacing:.02em;color:var(--ink);margin-bottom:.5rem}
+  .page-sub{font-size:.9rem;color:var(--muted);margin-bottom:1.5rem}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+
+  /* ── Panels ── */
+  .panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .panel-header{display:flex;align-items:center;gap:.6rem;padding:.9rem 1.3rem;border-bottom:1px solid var(--border);background:var(--bg3)}
+  .panel-icon{font-size:1rem}
+  .panel-title{font-size:.85rem;font-weight:800;letter-spacing:.04em;color:var(--ink)}
+  .panel-badge{margin-left:auto;font-size:.65rem;font-weight:800;padding:.18rem .6rem;border-radius:10px;letter-spacing:.05em}
+  .badge-ice{background:#e0f7fe;color:var(--ice-dark);border:1px solid #bae4fd}
+  .badge-pink{background:#fdf2f8;color:var(--pink-dark);border:1px solid #faa8d4}
+  .badge-mint{background:#ecfdf5;color:var(--mint-dark);border:1px solid #a7f3d0}
+  .badge-lavender{background:#f5f3ff;color:var(--lavender-dark);border:1px solid #d8b4fe}
+  .panel-body{padding:1.15rem}
+
+  /* ── Forms ── */
+  .form-grid{display:grid;gap:1rem}
+  .field{display:flex;flex-direction:column;gap:.35rem}
+  .field label{font-size:.72rem;font-weight:800;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+  .input{width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--ink);font-size:.9rem;padding:.65rem .9rem;outline:none;transition:border-color .2s,box-shadow .2s;font-family:inherit}
+  .input:focus{border-color:var(--ice);box-shadow:0 0 0 3px #0ea5e91a}
+  .input.err{border-color:#ef4444}
+  .field-note{font-size:.7rem;color:var(--muted);margin-top:.25rem}
+
+  select{width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--ink);font-size:.9rem;padding:.65rem .9rem;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%2364748b' d='M5 7L0 2h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .8rem center;padding-right:2rem}
+  select:focus{border-color:var(--ice)}
+
+  textarea{width:100%;min-height:150px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--ink);font-size:.9rem;line-height:1.65;padding:.8rem .95rem;resize:vertical;outline:none;transition:border-color .2s,box-shadow .2s;font-family:inherit}
+  textarea:focus{border-color:var(--ice);box-shadow:0 0 0 3px #0ea5e91a}
+
+  /* ── Buttons ── */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-size:.88rem;font-weight:800;letter-spacing:.03em;padding:.72rem 1.5rem;border-radius:11px;border:none;cursor:pointer;transition:all .2s;text-transform:uppercase;font-family:inherit}
+  .btn-primary{background:linear-gradient(135deg,var(--ice),var(--lavender));color:#fff;box-shadow:0 0 24px #0ea5e944}
+  .btn-primary:hover:not(:disabled){box-shadow:0 0 36px #0ea5e966;transform:translateY(-1px)}
+  .btn-primary:disabled{opacity:.65;cursor:not-allowed;transform:none}
+  .btn-ghost{background:var(--bg2);border:1px solid var(--border);color:var(--ink)}
+  .btn-ghost:hover{background:var(--bg3);border-color:var(--ring)}
+  .btn-sec{background:linear-gradient(135deg,var(--mint),var(--ice));color:#fff}
+  .btn-sec:hover{box-shadow:0 0 24px #10b98144}
+  .btn-danger{background:#fecaca;border:1px solid #fca5a5;color:#991b1b}
+  .btn-danger:hover{background:#fca5a5}
+  .btn-sm{padding:.5rem .9rem;font-size:.78rem}
+  .btn-row{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.9rem}
+
+  /* chips */
+  .chip-group{display:flex;flex-wrap:wrap;gap:.5rem}
+  .chip{background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-size:.72rem;font-weight:700;padding:.32rem .8rem;border-radius:20px;cursor:pointer;transition:all .2s;user-select:none}
+  .chip.on{background:var(--ice);color:#fff;border-color:var(--ice);box-shadow:0 0 12px #0ea5e944}
+  .chip:hover:not(.on){border-color:var(--ring);color:var(--ink)}
+
+  /* sliders */
+  .slider-wrap{display:flex;align-items:center;gap:.7rem}
+  .slider-label{width:90px;flex-shrink:0;font-size:.72rem;font-weight:800;color:var(--mixed,var(--muted));letter-spacing:.04em;text-transform:uppercase}
+  input[type=range]{flex:1;-webkit-appearance:none;height:4px;background:var(--border);border-radius:2px;outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--ice);border-radius:50%;box-shadow:0 0 10px #0ea5e955;cursor:pointer}
+  .sval{font-size:.75rem;color:var(--ice-dark);width:28px;text-align:right;font-weight:800}
+
+  /* duration chips */
+  .dur-group{display:flex;gap:.55rem}
+  .dur-chip{flex:1;background:var(--bg2);border:1.5px solid var(--border);color:var(--ink);font-size:.78rem;font-weight:800;padding:.75rem .5rem;border-radius:11px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:.3rem}
+  .dur-chip.on{border-color:var(--ice);background:#e0f7fe;color:var(--ice-dark);box-shadow:0 0 18px #0ea5e933}
+  .dur-chip .d-val{font-size:1rem}
+  .dur-chip .d-lab{font-size:.68rem;color:var(--muted);font-weight:700}
+
+  /* toast */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);z-index:120;background:var(--ink);color:#fff;padding:.85rem 1.4rem;border-radius:10px;font-size:.84rem;font-weight:700;box-shadow:var(--shadow-lg);transition:transform .3s;opacity:0;pointer-events:none}
+  #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  /* ── FLOATING GENERATION TIMER ── */
+  #timerWidget{position:fixed;bottom:28px;right:28px;z-index:110;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:.9rem 1.2rem;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:.85rem;min-width:230px;transform:translateY(140px);opacity:0;transition:transform .35s,opacity .35s}
+  #timerWidget.show{transform:translateY(0);opacity:1}
+  #timerWidget.mini{padding:.55rem .85rem;min-width:auto}
+  .tw-dot{width:9px;height:9px;border-radius:50%;background:var(--muted);box-shadow:0 0 0 rgba(2,6,23,0)}
+  .tw-dot.live{background:var(--mint);animation:pulse 1.5s infinite}
+  .tw-dot.ready{background:var(--mint)}
+  .tw-text{font-size:.82rem;font-weight:800;color:var(--ink);line-height:1.3}
+  .tw-text .tw-status{display:block;color:var(--muted);font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .tw-mini{font-size:.75rem;color:var(--mint-dark);font-weight:800}
+  .tw-btn{background:var(--bg3);border:1px solid var(--border);color:var(--ink);font-size:.72rem;font-weight:800;padding:.35rem .75rem;border-radius:8px}
+  .tw-btn:hover{background:var(--border)}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0.4)}50%{box-shadow:0 0 0 6px rgba(16,185,129,0.2)}}
+
+  /* ── Floating ANI companion ── */
+  #aniFab{position:fixed;bottom:28px;left:28px;z-index:110}
+  .ani-btn{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--ice),var(--lavender));color:#fff;display:grid;place-items:center;font-size:1.4rem;box-shadow:0 10px 30px -10px #0ea5e966,0 0 24px #a78bfa55;cursor:pointer;transition:transform .2s,box-shadow .2s;border:2px solid #fff}
+  .ani-btn:active{transform:scale(.95)}
+  .ani-badge{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#ef4444;color:#fff;font-size:.65rem;font-weight:900;display:grid;place-items:center;border:2px solid #fff;animation:pulse 1.5s infinite}
+  #aniPanel{position:fixed;bottom:98px;left:28px;z-index:110;width:360px;background:var(--bg2);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;overflow:hidden;transform:translateY(140px);opacity:0;transition:transform .35s,opacity .35s}
+  #aniPanel.open{transform:translateY(0);opacity:1}
+  .ani-header{display:flex;align-items:center;gap:.8rem;padding:1rem 1.2rem;background:linear-gradient(135deg,#e0f7fe,#f5f3ff);border-bottom:1px solid var(--border)}
+  .ani-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--ice),var(--lavender));color:#fff;display:grid;place-items:center;font-weight:900;font-size:1rem}
+  .ani-info{flex:1}
+  .ani-info .ani-name{font-size:.88rem;font-weight:800;color:var(--ink)}
+  .ani-info .ani-sub{font-size:.7rem;color:var(--muted)}
+  .ani-close{color:var(--muted);font-size:1.1rem}
+  .ani-body{padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.8rem;max-height:340px;overflow-y:auto}
+  .ani-msg{display:flex;gap:.7rem;align-items:flex-start}
+  .ani-msg.ani{flex-direction:row-reverse}
+  .ani-bubble{padding:.65rem .95rem;border-radius:12px;font-size:.84rem;line-height:1.6;max-width:80%}
+  .ani-msg.ani .ani-bubble{background:var(--bg3);color:var(--ink);border-bottom-left-radius:4px;border:1px solid var(--border)}
+  .ani-msg.user .ani-bubble{background:linear-gradient(135deg,var(--ice),var(--lavender));color:#fff;border-bottom-right-radius:4px}
+  .ani-meta{font-size:.65rem;color:var(--muted);margin-top:.2rem}
+  .ani-input{display:flex;gap:.5rem;padding:.9rem 1.2rem;border-top:1px solid var(--border);background:var(--bg2)}
+  .ani-input input{flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--ink);font-size:.88rem;padding:.65rem .9rem;outline:none}
+  .ani-input input:focus{border-color:var(--ice)}
+  .ani-send{background:var(--ink);color:#fff;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:1rem}
+  .ani-suggest{display:flex;gap:.55rem;margin-top:.5rem}
+  .ani-suggest button{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--ink);font-size:.74rem;font-weight:700;padding:.5rem .7rem;border-radius:10px;transition:all .2s}
+  .ani-suggest button:hover{border-color:var(--ice);color:var(--ice-dark)}
+
+  /* ── Input studio ── */
+  .studio{height:100%}
+  .studio textarea:focus{border-color:var(--ice)}
+
+  /* ── Scene output ── */
+  .scene-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+  .scene-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+  .scene-img{width:100%;height:160px;background:var(--bg3);border-bottom:1px solid var(--border);display:grid;place-items:center;color:var(--muted);font-size:.8rem;overflow:hidden}
+  .scene-img img{width:100%;height:100%;object-fit:cover}
+  .scene-body{padding:.85rem;display:flex;flex-direction:column;gap:.55rem}
+  .scene-head{display:flex;justify-content:space-between;align-items:center}
+  .scene-num{background:linear-gradient(135deg,var(--ice),var(--lavender));color:#fff;font-size:.65rem;font-weight:900;padding:.18rem .5rem;border-radius:6px}
+  .scene-ttl{font-size:.82rem;font-weight:800;color:var(--ink)}
+  .scene-text{font-size:.8rem;color:var(--muted);line-height:1.55}
+  .scene-foot{display:flex;justify-content:space-between;align-items:center;margin-top:.4rem}
+  .scene-stage{font-size:.66rem;font-weight:800;padding:.2rem .55rem;border-radius:8px}
+  .stage-pending{background:#f1f5f9;color:var(--muted);border:1px solid var(--border)}
+  .stage-running{background:#e0f7fe;color:var(--ice-dark);border:1px solid #bae4fd}
+  .stage-done{background:#ecfdf5;color:var(--mint-dark);border:1px solid #a7f3d0}
+  .stage-fail{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5}
+
+  /* ── history / review ── */
+  .v-list{display:flex;flex-direction:column;gap:.75rem}
+  .v-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:.95rem;display:grid;grid-template-columns:72px 1fr auto;gap:.9rem;align-items:center}
+  .v-thumb{width:72px;height:45px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);overflow:hidden;display:grid;place-items:center;color:var(--muted);font-size:.7rem}
+  .v-thumb img{width:100%;height:100%;object-fit:cover}
+  .v-info{flex:1;min-width:0}
+  .v-title{font-size:.86rem;font-weight:800;color:var(--ink);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .v-meta{font-size:.7rem;color:var(--muted);margin-top:.25rem;line-height:1.5}
+  .v-actions{display:flex;gap:.45rem;flex-shrink:0}
+  .v-chip{font-size:.66rem;font-weight:800;padding:.22rem .55rem;border-radius:8px}
+  .chip-done{background:#ecfdf5;color:var(--mint-dark);border:1px solid #a7f3d0}
+  .chip-proc{background:#e0f7fe;color:var(--ice-dark);border:1px solid #bae4fd}
+  .chip-fail{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5}
+  .chip-pend{background:#f1f5f9;color:var(--muted);border:1px solid var(--border)}
+
+  .filter-bar{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+  .filter-chip{background:var(--bg2);border:1px solid var(--border);color:var(--ink);font-size:.72rem;font-weight:700;padding:.35rem .85rem;border-radius:20px;cursor:pointer;transition:all .2s}
+  .filter-chip.on{background:var(--ice);color:#fff;border-color:var(--ice)}
+
+  /* empty */
+  .empty{text-align:center;padding:3rem 1rem;color:var(--muted)}
+  .empty .big{font-size:3rem;margin-bottom:.7rem;opacity:.5}
+  .empty p{font-size:.9rem}
+
+  /* ── footer ── */
+  footer{text-align:center;padding:1.5rem;border-top:1px solid var(--border);color:var(--muted);font-size:.72rem;background:var(--bg2)}
+  footer span{color:var(--ice-dark);font-weight:700}
+
+  /* ── teleportation matrix (full screen) ── */
+  #matrix{position:fixed;inset:0;z-index:200;background:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;opacity:0;pointer-events:none;transition:opacity .4s}
+  #matrix.active{opacity:1;pointer-events:all}
+  .matrix-wrap{width:100%;max-width:560px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:0 0 80px rgba(2,6,23,0.12)}
+  .matrix-head{padding:1.5rem 1.5rem 1rem;text-align:center;border-bottom:1px solid var(--border)}
+  .matrix-title{font-size:1rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);display:flex;align-items:center;justify-content:center;gap:.5rem}
+  .matrix-title .ring{width:16px;height:16px;border:2px solid transparent;border-top-color:var(--ice);border-radius:50%;animation:spin 1s linear infinite}
+  .matrix-sub{font-size:.78rem;color:var(--muted);margin-top:.4rem}
+  .matrix-body{padding:0 1.5rem 1rem}
+  .matrix-log{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem;max-height:260px;overflow-y:auto}
+  .matrix-line{display:flex;gap:.75rem;align-items:flex-start;font-size:.78rem;line-height:1.55;color:var(--ink);padding:.5rem .7rem;border-radius:10px;background:var(--bg3);opacity:0;transform:translateY(8px);animation:mlIn .35s forwards}
+  .matrix-line .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;margin-top:.1rem}
+  .matrix-line .dot.run{background:var(--ice);box-shadow:0 0 10px #0ea5e955}
+  .matrix-line .dot.done{background:var(--mint)}
+  .matrix-line .dot.fail{background:#ef4444}
+  .matrix-line .text{color:var(--muted)}
+  .matrix-line .text b{color:var(--ink)}
+  .matrix-foot{display:flex;gap:.5rem;padding:1rem 1.5rem;border-top:1px solid var(--border)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes mlIn{to{opacity:1;transform:none}}
+  .meta-row{display:flex;gap:1rem;margin-top:.8rem}
+  .meta-cell{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.7rem .9rem}
+  .meta-cell .m-lab{font-size:.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .meta-cell .m-val{font-size:.88rem;font-weight:800;color:var(--ink);margin-top:.25rem}
+  .meta-cell .m-val.warn{color:#991b1b}
+  .meta-cell .m-val.ok{color:var(--mint-dark)}
+  .meta-cell .m-val.ready{color:var(--mint-dark)}
+
+  /* settings */
+  .setting-item{display:flex;justify-content:space-between;align-items:center;padding:1rem 0;border-bottom:1px solid var(--border)}
+  .setting-item:last-child{border-bottom:none}
+  .setting-info .s-title{font-size:.88rem;font-weight:800;color:var(--ink)}
+  .setting-info .s-desc{font-size:.74rem;color:var(--muted);margin-top:.2rem}
+  .switch{position:relative;width:44px;height:24px;background:var(--border);border-radius:12px;cursor:pointer}
+  .switch::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+  .switch.on{background:var(--ice)}
+  .switch.on::after{transform:translateX(20px)}
+  .legal-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-top:.5rem}
+  .legal-card a{color:var(--ice-dark);text-decoration:underline;font-weight:700;font-size:.8rem}
+
+  @media(max-width:768px){
+    .grid-2{grid-template-columns:1fr}
+    nav{padding:.6rem 1rem}
+    .nav-item{font-size:.78rem;padding:.3rem .6rem}
+    #aniPanel{left:12px;right:12px;width:auto;bottom:90px}
+    #timerWidget{right:12px;left:auto;bottom:28px;min-width:auto}
+    #aniFab{left:12px;bottom:16px}
+    .v-item{grid-template-columns:60px 1fr auto;gap:.6rem;padding:.75rem}
+    .v-actions{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-left">
+    <div class="logo">AniLearn<span>.X</span></div>
+    <div class="nav-item active" id="navCreate" onclick="setMode('create')">Create</div>
+    <div class="nav-item" id="navReview" onclick="setMode('review')">Review</div>
+    <div class="nav-item" id="navSettings" onclick="setMode('settings')">Settings</div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-badge" id="navStatus">Signed out</div>
+    <div class="nav-avatar guest" id="navAvatar" onclick="toggleAuth()">?</div>
+  </div>
+</nav>
+
+<!-- AUTH OVERLAY -->
+<div id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-top">
+      <div class="auth-logo"><div class="mark">AI</div><div class="auth-name">AniLearn<span>.X</span></div></div>
+      <div class="auth-headline" id="authHeadline">Welcome back</div>
+      <div class="auth-sub" id="authSub">Sign in to access your anime learning workspace and saved videos.</div>
+    </div>
+    <div class="auth-body">
+      <div id="authLogin">
+        <div style="font-size:.82rem;color:var(--muted);margin-bottom:.6rem;line-height:1.5">Secure passwordless sign-in via Supabase email magic link or OTP. No Google Cloud, Meta/WhatsApp, or payment services are used.</div>
+        <div class="field">
+          <label>Email address</label>
+          <input class="input" id="authEmail" type="email" placeholder="you@example.com">
+        </div>
+        <button class="btn btn-primary btn-oauth email" style="width:100;justify-content:center" onclick="sendMagicLink()">Send sign-in link</button>
+        <div class="err-msg" id="authErr"></div>
+      </div>
+      <div id="authCreate" style="display:none">
+        <div class="field"><label>Email address</label><input class="input" id="regEmail" type="email" placeholder="you@example.com"></div>
+        <label style="display:flex;align-items:start;gap:.5rem;font-size:.8rem;color:var(--ink);cursor:pointer;margin-top:.6rem">
+          <input type="checkbox" id="regTerms" style="margin-top:.15rem"> I accept the <a href="#" onclick="openLegal('terms')">Terms &amp; Conditions</a> and <a href="#" onclick="openLegal('privacy')">Privacy Policy</a> (v1.0)
+        </label>
+        <div class="err-msg" id="regErr"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:.8rem" onclick="registerUser()">Send sign-in link</button>
+        <div class="field-note" style="margin-top:.5rem">AniLearn.X uses passwordless email sign-in (magic link/OTP). After signing in, record your legal acceptance in Settings if needed.</div>
+        <div class="auth-toggle">Already have an account? <button onclick="showLogin()">Sign in</button></div>
+      </div>
+    </div>
+    <div class="auth-footer">
+      By signing in you agree to our <a href="#" onclick="openLegal('terms')">Terms</a> and <a href="#" onclick="openLegal('privacy')">Privacy Policy</a>.
+      <div class="auth-toggle" style="margin-top:.6rem">New here? <button onclick="showCreate()">Create a new account</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- LEGAL OVERLAY -->
+<div id="legalOverlay" style="position:fixed;inset:0;z-index:110;background:rgba(15,23,42,0.45);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:1rem">
+  <div class="auth-card" style="max-width:700px;height:70vh;display:flex;flex-direction:column">
+    <div class="auth-top" style="border-bottom:none;text-align:left;padding:1.25rem 1.5rem 1rem">
+      <button class="ani-close" onclick="closeLegal()" style="padding:0">✕</button>
+      <div class="auth-headline" id="legalTitle">Terms &amp; Conditions</div>
+    </div>
+    <div style="flex:1;overflow:auto;padding:0 1.5rem;color:#334155;line-height:1.7;font-size:.86rem" id="legalContent"></div>
+    <div style="padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.5rem">
+      <button class="btn btn-ghost btn-sm" onclick="closeLegal()">Close</button>
+      <button class="btn btn-primary btn-sm" onclick="acceptLegal()">I accept</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODE: CREATE -->
+<div id="modeCreate" class="section active">
+  <div class="page-title">Create Studio</div>
+  <div class="page-sub">Turn an educational topic into an anime learning adventure.</div>
+
+  <div class="grid-2">
+    <!-- Left: Input Studio -->
+    <div class="panel">
+      <div class="panel-header"><span class="panel-icon">✍️</span><span class="panel-title">INPUT STUDIO</span><span class="panel-badge badge-ice">READY</span></div>
+      <div class="panel-body">
+        <textarea id="createTopic" placeholder="Paste your educational topic, notes, or textbook content here…"></textarea>
+        <div class="field-note" style="margin-top:.3rem">Supports topics, notes, questions, or pasted textbook content.</div>
+        <div class="btn-row" style="margin-top:.6rem">
+          <button class="btn btn-ghost btn-sm" onclick="loadSample()">Load sample</button>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('createTopic').value='';">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Controls -->
+    <div class="panel" style="display:flex;flex-direction:column">
+      <div class="panel-body" style="flex:1">
+        <div class="field"><label>Subject</label>
+          <select id="selSubject">
+            <option>Science</option><option>Mathematics</option><option>Social Science</option><option>History</option><option>Geography</option><option>English</option><option>Hindi</option><option>Computer Science</option><option>General Knowledge</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field"><label>Class level</label>
+          <select id="selClass">
+            <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option>
+          </select>
+        </div>
+        <div class="field"><label>Narration language</label>
+          <select id="selLang"><option>English</option><option>Hindi</option><option>Japanese</option><option>Other</option></select>
+        </div>
+        <div class="field"><label>Subtitle language</label>
+          <select id="selSubLang"><option>English</option><option>Hindi</option><option>Japanese</option><option>None</option></select>
+        </div>
+        <div class="field"><label>Video duration</label>
+          <div class="dur-group">
+            <div class="dur-chip on" id="durShort" onclick="setDur('short')"><div class="d-val">5</div><div class="d-lab">Short</div></div>
+            <div class="dur-chip" id="durMedium" onclick="setDur('medium')"><div class="d-val">7</div><div class="d-lab">Medium</div></div>
+            <div class="dur-chip" id="durLong" onclick="setDur('long')"><div class="d-val">10</div><div class="d-lab">Long</div></div>
+          </div>
+          <input type="hidden" id="selDuration" value="short">
+        </div>
+        <div class="field"><label>Anime style</label>
+          <div class="chip-group" id="styleChips">
+            <span class="chip on" onclick="pickStyle(this,'Battle Academy')">Battle Academy</span>
+            <span class="chip" onclick="pickStyle(this,'Cyber Nexus')">Cyber Nexus</span>
+            <span class="chip" onclick="pickStyle(this,'Fantasy Adventure')">Fantasy Adventure</span>
+            <span class="chip" onclick="pickStyle(this,'Historical Anime')">Historical Anime</span>
+            <span class="chip" onclick="pickStyle(this,'Science Laboratory')">Science Laboratory</span>
+            <span class="chip" onclick="pickStyle(this,'Futuristic Classroom')">Futuristic Classroom</span>
+            <span class="chip" onclick="pickStyle(this,'Mystery Academy')">Mystery Academy</span>
+            <span class="chip" onclick="pickStyle(this,'Anime Documentary')">Anime Documentary</span>
+          </div>
+          <input type="hidden" id="selStyle" value="Battle Academy">
+        </div>
+        <div class="field"><label>Features</label>
+          <div class="chip-group" id="featureChips">
+            <span class="chip on" onclick="toggleChip(this)">Dialogue</span>
+            <span class="chip on" onclick="toggleChip(this)">Characters</span>
+            <span class="chip on" onclick="toggleChip(this)">Scene Art</span>
+            <span class="chip" onclick="toggleChip(this)">Voice Lines</span>
+            <span class="chip" onclick="toggleChip(this)">Quiz Mode</span>
+            <span class="chip" onclick="toggleChip(this)">BGM Tags</span>
+          </div>
+        </div>
+      </div>
+      <div style="padding:1rem 1.3rem;border-top:1px solid var(--border)">
+        <div class="meta-row">
+          <div class="meta-cell"><div class="m-lab">Target duration</div><div class="m-val" id="durDisplay">5 minutes</div></div>
+          <div class="meta-cell"><div class="m-lab">Estimated scenes</div><div class="m-val" id="sceneEst">5</div></div>
+        </div>
+        <button class="btn btn-primary" id="btnGenerate" style="width:100;margin-top:1rem" onclick="startGeneration()">⚡ Generate My Anime Video</button>
+        <div class="err-msg" id="genErr" style="text-align:center"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene studio / output -->
+  <div class="panel" style="margin-top:1.5rem">
+    <div class="panel-header"><span class="panel-icon">🎬</span><span class="panel-title">SCENE STUDIO</span><span class="panel-badge badge-pink" id="sceneBadge">IDLE</span></div>
+    <div class="panel-body">
+      <div id="scenesEmpty" class="empty" style="padding:2rem 1rem"><div class="big">🎬</div><p>Your generated anime scenes will appear here.</p></div>
+      <div id="sceneGrid" class="scene-grid" style="display:none"></div>
+      <div id="sceneControls" style="display:none;margin-top:1rem;display:flex;gap:.7rem;flex-wrap:wrap">
+        <button class="btn btn-sec btn-sm" onclick="exportProject()">📤 Export project</button>
+        <button class="btn btn-ghost btn-sm" onclick="copyProject()">📋 Copy script</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODE: REVIEW -->
+<div id="modeReview" class="section">
+  <div class="page-title">Review</div>
+  <div class="page-sub">Your previously generated anime learning videos.</div>
+  <div class="filter-bar">
+    <div class="filter-chip on" onclick="filterProjects('all',this)">All</div>
+    <div class="filter-chip" onclick="filterProjects('completed',this)">Completed</div>
+    <div class="filter-chip" onclick="filterProjects('processing',this)">Processing</div>
+    <div class="filter-chip" onclick="filterProjects('failed',this)">Failed</div>
+    <input class="input" id="projSearch" placeholder="Search videos…" style="width:220px" oninput="filterProjects('all',null)">
+  </div>
+  <div class="panel">
+    <div class="panel-body">
+      <div id="reviewEmpty" class="empty" style="padding:2rem 1rem"><div class="big">📭</div><p>No videos yet. Create your first anime learning video in Create Studio.</p></div>
+      <div id="reviewList" class="v-list" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODE: SETTINGS -->
+<div id="modeSettings" class="section">
+  <div class="page-title">Settings</div>
+  <div class="page-sub">Account, preferences, notifications, and privacy.</div>
+  <div class="panel">
+    <div class="panel-body">
+      <div class="setting-item">
+        <div class="setting-info"><div class="s-title">Account</div><div class="s-desc">Manage your profile and sign out.</div></div>
+        <div>
+          <button class="btn btn-ghost btn-sm" onclick="viewProfile()">Profile</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteAccount()">Delete account</button>
+        </div>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info"><div class="s-title">Default class</div><div class="s-desc">Default class level for new videos.</div></div>
+        <select class="input" id="setDefaultClass" style="width:110px"></select>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info"><div class="s-title">Default subject</div><div class="s-desc">Default subject for new videos.</div></div>
+        <select class="input" id="setDefaultSubject" style="width:160px"></select>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info"><div class="s-title">Default narration language</div><div class="s-desc">Default voice language.</div></div>
+        <select class="input" id="setDefaultLang" style="width:150px"></select>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info"><div class="s-title">Default subtitle language</div><div class="s-desc">Default subtitle language.</div></div>
+        <select class="input" id="setDefaultSub" style="width:150px"></select>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info"><div class="s-title">Default anime style</div><div class="s-desc">Default visual style.</div></div>
+        <select class="input" id="setDefaultStyle" style="width:180px"></select>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info"><div class="s-title">Notifications</div><div class="s-desc">How you're told when a video is ready.</div></div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button class="chip" id="nfDashboard" onclick="setNotif('dashboard')">Dashboard only</button>
+          <button class="chip" id="nfEmail" onclick="setNotif('email')">Email</button>
+
+        </div>
+        <div class="field-note" style="margin-top:.6rem">Email notifications use Resend when configured on the backend. Dashboard notifications are always available.</div>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info"><div class="s-title">Legal &amp; privacy</div><div class="s-desc">Terms, privacy policy, and data.</div></div>
+        <div class="legal-card">
+          <div style="font-size:.8rem;font-weight:800;color:var(--ink)">Terms &amp; Conditions (v1.1)</div>
+          <div style="font-size:.76rem;color:var(--muted);margin-top:.3rem">AI-generated educational content using configured open-source/local services (Ollama, Piper TTS, open-weight/self-hosted engines) and Supabase. Storage and retention in Supabase Storage. Optional email notifications (Resend, when configured) require consent. Account deletion removes your projects and data.</div>
+          <div style="margin-top:.6rem"><a href="#" onclick="openLegal('terms')">View Terms &amp; Conditions</a> · <a href="#" onclick="openLegal('privacy')">View Privacy Policy</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FLOATING ANI -->
+<div id="aniFab">
+  <button class="ani-btn" id="aniBtn" onclick="toggleAni()" title="ANI — AI helper">✨</button>
+  <div class="ani-badge" id="aniBadge">1</div>
+</div>
+<div id="aniPanel">
+  <div class="ani-header"><div class="ani-avatar">ANI</div><div class="ani-info"><div class="ani-name">ANI</div><div class="ani-sub">AI learning companion</div></div><div class="ani-close" onclick="toggleAni(false)">✕</div></div>
+  <div class="ani-body" id="aniBody">
+    <div class="ani-msg ani"><div class="ani-bubble">Hi! I'm ANI. Ask me about any topic, and I can help you turn the answer into an anime learning adventure.</div><div class="ani-meta">just now</div></div>
+  </div>
+  <div class="ani-input">
+    <input id="aniInput" type="text" placeholder="Ask ANI about your topic…" onkeydown="if(event.key==='Enter')sendAni()">
+    <div class="ani-send" onclick="sendAni()">→</div>
+  </div>
+  <div class="ani-suggest" id="aniSuggest" style="display:none">
+    <button onclick="aniCreateVideo()">Create my video</button>
+    <button onclick="closeAniSuggest()">Maybe later</button>
+  </div>
+</div>
+
+<!-- FLOATING TIMER -->
+<div id="timerWidget">
+  <div class="tw-dot" id="twDot"></div>
+  <div class="tw-text"><span class="tw-status" id="twStatus">ready</span><span id="twText">Ready to create</span></div>
+  <div class="tw-btn" id="twMin" onclick="toggleTimerMini()">−</div>
+</div>
+
+<!-- TELEPORTATION MATRIX -->
+<div id="matrix">
+  <div class="matrix-wrap">
+    <div class="matrix-head">
+      <div class="matrix-title"><div class="ring"></div>TRANSMITTING TO COMPUTE MATRIX</div>
+      <div class="matrix-sub" id="matrixSub">Real backend job events</div>
+    </div>
+    <div class="matrix-body">
+      <div class="matrix-log" id="matrixLog"></div>
+      <div class="meta-row">
+        <div class="meta-cell"><div class="m-lab">Project</div><div class="m-val" id="mProject">—</div></div>
+        <div class="meta-cell"><div class="m-lab">Duration</div><div class="m-val" id="mDuration">—</div></div>
+        <div class="meta-cell"><div class="m-lab">Started</div><div class="m-val" id="mStarted">—</div></div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-cell"><div class="m-lab">Stage</div><div class="m-val" id="mStage" style="color:var(--muted)">Idle</div></div>
+        <div class="meta-cell"><div class="m-lab">Status</div><div class="m-val" id="mStatus" style="color:var(--muted)">—</div></div>
+        <div class="meta-cell"><div class="m-lab">Elapsed</div><div class="m-val" id="mElapsed">0s</div></div>
+      </div>
+    </div>
+    <div class="matrix-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeMatrix()">Close matrix</button>
+      <button class="btn btn-primary btn-sm" onclick="openReview()">Go to Review</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── config ── */
+const BACKEND_HOST = '';
+let currentUser = null;
+let accessToken = null;
+let currentJobId = null;
+let currentProjectId = null;
+let currentMode = 'create';
+let selectedDur = 'short';
+let selectedStyle = 'Battle Academy';
+let aniCreateCtx = null;
+let timerMini = false;
+let matrixStart = 0;
+let matrixInterval = null;
+
+/* ── DOM helpers ── */
+const $ = (s)=>document.querySelector(s);
+const $$ = (s)=>Array.from(document.querySelectorAll(s));
+function show(id){$(id).style.display=''}
+function hide(id){$(id).style.display='none'}
+function setText(id,t){const el=$(id);if(el)el.textContent=t}
+function toast(msg){const t=$('#toast');if(!t){const el=document.createElement('div');el.id='toast';el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.classList.add('show'),10);setTimeout(()=>el.classList.remove('show'),2200);return}t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+
+/* ── API ── */
+async function api(path,opts={}){
+  const headers={...(opts.headers||{})};
+  if(opts.body && !(opts.body instanceof FormData)) headers['Content-Type']='application/json';
+  const res=await fetch(BACKEND_HOST+path,{...opts,headers,credentials:'include'});
+  let data;try{data=await res.json()}catch(e){data=null}
+  if(!res.ok) throw new Error(data&&data.error?data.error:'HTTP '+res.status);
+  return data;
+}
+
+/* ── Auth ── */
+async function checkAuth(){
+  try{
+    const d=await api('/api/auth/me');
+    currentUser=d.user;accessToken=d.access_token;
+    updateNav(true,d.user);
+    $('#authOverlay').classList.add('hide');
+    loadSettings();
+  }catch(e){
+    currentUser=null;updateNav(false);$('#authOverlay').classList.remove('hide');
+  }
+}
+function updateNav(authed,user){
+  const badge=$('#navStatus'),av=$('#navAvatar');
+  if(authed){badge.textContent=user.email;badge.className='nav-badge badge-ice';av.textContent=(user.email||'U')[0].toUpperCase();av.className='nav-avatar';}
+  else{badge.textContent='Signed out';badge.className='nav-badge';av.textContent='?';av.className='nav-avatar guest';}
+}
+// Google/social OAuth removed: Supabase email magic link / OTP only.
+async function sendMagicLink(){
+  const email=$('#authEmail').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){$('#authErr').textContent='Enter a valid email.';$('#authErr').classList.add('show');return}
+  try{await api('/api/auth/email/send',{method:'POST',body:JSON.stringify({email})});$('#authErr').classList.remove('show');toast('Sign-in link sent. Check your email.');}catch(e){$('#authErr').textContent=e.message;$('#authErr').classList.add('show')}
+}
+async function showLogin(){$('#authLogin').style.display='block';$('#authCreate').style.display='none';$('#authHeadline').textContent='Welcome back';$('#authSub').textContent='Sign in to access your workspace.'}
+async function showCreate(){$('#authLogin').style.display='none';$('#authCreate').style.display='block';$('#authHeadline').textContent='Create your account';$('#authSub').textContent='Join AniLearn.X.'}
+async function toggleAuth(force){
+  const ov=$('#authOverlay');
+  if(force===undefined){ov.classList.toggle('hide');if(!ov.classList.contains('hide'))checkAuth();}
+  else{ov.classList.toggle('hide',force)}
+}
+async function registerUser(){
+  const email=$('#regEmail').value.trim();
+  if(!email){$('#regErr').textContent='Email address required.';$('#regErr').classList.add('show');return}
+  if(!$('#regTerms').checked){$('#regErr').textContent='You must accept Terms & Privacy (v1.0).';$('#regErr').classList.add('show');return}
+  try{
+    await api('/api/auth/email/send',{method:'POST',body:JSON.stringify({email})});
+    $('#regErr').classList.remove('show');
+    toast('Sign-in link sent. Check your email to complete sign-in. Accept legal terms in Settings after signing in.');
+    showLogin();
+  }catch(e){$('#regErr').textContent=e.message;$('#regErr').classList.add('show')}
+}
+async function logout(){
+  try{await api('/api/auth/logout',{method:'POST'})}catch{}
+  currentUser=null;updateNav(false);$('#authOverlay').classList.remove('hide');setMode('create');toast('Signed out.')
+}
+
+/* ── Legal ── */
+function openLegal(which){
+  const texts={
+    terms:'AniLearn.X Terms &amp; Conditions (v1.1).<br><br>1. AI-generated content: Videos are generated using a configured open-source LLM (Ollama) for scripts/ANI, Piper TTS for narration, open-weight/self-hosted engines for images/video as configured, and FFmpeg for assembly. Outputs are educational and may contain inaccuracies; always verify with your curriculum.<br>2. Services: Supabase (auth, database, storage), optional self-hosted/open-weight model endpoints, Ollama, Piper TTS, FFmpeg, and optional Resend email notifications when configured. No Google Cloud, Meta/WhatsApp, or payment services are used. Each configured service has its own terms/limits.<br>3. Storage: Projects, videos, and images are stored in Supabase Storage.<br>4. Notifications: Dashboard notifications are available in-app. Optional email notifications use Resend when configured and require your consent.<br>5. Account deletion: Deleting your account removes your profile and projects.<br>6. Age: Users under 13 require parental consent.<br>7. No payments are collected by AniLearn.X.',
+    privacy:'AniLearn.X Privacy Policy (v1.1).<br><br>We collect: email (for Supabase magic link/OTP sign-in), profile settings, generation topics/scripts, and video metadata.<br>We do not collect passwords and do not use Google/social accounts.<br>Data is stored in Supabase (PostgreSQL + Storage) and is accessible only to you via Row Level Security.<br>Videos and scripts are retained until you delete your project or account.<br>Optional email notifications (Resend, when configured) are sent only with consent.<br>You may delete your account and all associated data at any time.'
+  };
+  $('#legalTitle').textContent=which==='terms'?'Terms &amp; Conditions':'Privacy Policy';
+  $('#legalContent').innerHTML=texts[which]||'Document not available.';
+  $('#legalOverlay').style.display='flex';
+}
+function closeLegal(){$('#legalOverlay').style.display='none'}
+function acceptLegal(){closeLegal();toast('Accepted.')}
+
+/* ── Modes ── */
+function setMode(m){
+  currentMode=m;
+  $$('.section').forEach(s=>s.classList.remove('active'));
+  $$('.nav-item').forEach(n=>n.classList.remove('active'));
+  $('#mode'+m[0].toUpperCase()+m.slice(1)).classList.add('active');
+  $('#nav'+m[0].toUpperCase()+m.slice(1)).classList.add('active');
+  if(m==='review')loadProjects();
+  if(m==='settings')loadSettings();
+}
+
+/* ── Create helpers ── */
+let durSeconds={short:5*60,medium:7*60,long:10*60};
+function setDur(d){selectedDur=d;$$('.dur-chip').forEach(c=>c.classList.remove('on'));$('#dur'+d[0].toUpperCase()+d.slice(1)).classList.add('on');$('#selDuration').value=d;$('#durDisplay').textContent=Math.round(durSeconds[d]/60)+' minutes';$('#sceneEst').textContent=Math.round(durSeconds[d]/45);}
+function pickStyle(el,s){$$('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');selectedStyle=s;$('#selStyle').value=s}
+function toggleChip(el){el.classList.toggle('on')}
+function loadSample(){$('#createTopic').value='The mitochondria is the powerhouse of the cell. It produces ATP through cellular respiration, converting glucose and oxygen into energy. Each glucose molecule yields approximately 36-38 ATP molecules.'}
+
+/* ── Generation ── */
+async function startGeneration(){
+  const topic=$('#createTopic').value.trim();
+  if(!topic){toast('Enter an educational topic.');return}
+  if(!currentUser){toggleAuth();return}
+  const features={};
+  $$('#featureChips .chip.on').forEach(c=>{features[c.textContent.trim()]=true});
+  const payload={
+    title:topic.slice(0,60),subject:$('#selSubject').value,classLevel:$('#selClass').value,
+    topic,script:$('#createTopic').value,duration:selectedDur,
+    language:$('#selLang').value,animeStyle:selectedStyle,
+    narrationLanguage:$('#selLang').value,subtitleLanguage:$('#selSubLang').value,features
+  };
+  try{
+    $('#btnGenerate').disabled=true;$('#genErr').classList.remove('show');
+    const elig=await api('/api/generation/eligibility');
+    if(!elig.eligible){$('#genErr').textContent=elig.message||'Cannot generate right now.';$('#genErr').classList.add('show');$('#btnGenerate').disabled=false;return}
+    const d=await api('/api/generation/start',{method:'POST',body:JSON.stringify(payload)});
+    if(!d.ok)throw new Error(d.message||'Start rejected');
+    currentJobId=d.jobId;currentProjectId=d.projectId;
+    openMatrix();
+    pollJob();
+  }catch(e){$('#genErr').textContent=e.message;$('#genErr').classList.add('show');$('#btnGenerate').disabled=false}
+}
+
+async function pollJob(){
+  if(!currentJobId)return;
+  try{
+    const d=await api('/api/generation/status/'+currentJobId);
+    const job=d.job;
+    updateMatrix(job);
+    if(job.status==='processing'||job.status==='pending'){setTimeout(pollJob,5000)}
+    else if(job.status==='completed'){closeMatrix();toast('Video completed!');refreshTimer();setTimeout(()=>{currentJobId=null;},1000);}
+    else if(job.status==='failed'){closeMatrix();toast('Generation failed: '+(job.failure_details||''));currentJobId=null;$('#btnGenerate').disabled=false;}
+  }catch(e){console.error(e);setTimeout(pollJob,8000)}
+}
+
+/* ── Matrix ── */
+function openMatrix(){
+  $('#matrix').classList.add('active');$('#matrixLog').innerHTML='';matrixStart=Date.now();
+  addMatrixLine('Job created','Request received — generation job queued.','pending');
+  addMeta('Project',$('#createTopic').value.trim().slice(0,40)||'(untitled)');
+  addMeta('Duration',Math.round(durSeconds[selectedDur]/60)+' minutes');
+  addMeta('Started',new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
+  addMeta('Stage','Queued','muted');
+  addMeta('Status','Running','ok');
+  if(matrixInterval)clearInterval(matrixInterval);
+  matrixInterval=setInterval(()=>{$('#mElapsed').textContent=Math.round((Date.now()-matrixStart)/1000)+'s'},1000);
+}
+function closeMatrix(){$('#matrix').classList.remove('active');if(matrixInterval)clearInterval(matrixInterval)}
+function updateMatrix(job){
+  const stageMap={
+    queued:'Queued',starting:'Starting',    scripting:'Scripting (AI)',
+    image_generation:'Scene artwork',video_generation:'Video clips',narration:'Narration (TTS)',
+    subtitles:'Subtitles',assembly:'Assembly (FFmpeg)',upload:'Uploading',verification:'Verifying',done:'Completed',failed:'Failed'
+  };
+  const clsMap={pending:'pending',running:'running',done:'done',fail:'fail'};
+  const label=stageMap[job.current_stage]||job.current_stage;
+  addMatrixLine(label,(job.current_stage==='done'?'All stages complete':'Processing: '+label),job.status==='completed'?'done':job.status==='failed'?'fail':'running');
+  $('#mStage').textContent=label;$('#mStage').className='m-val '+(job.status==='completed'?'ok':job.status==='failed'?'warn':'');
+  $('#mStatus').textContent=job.status;$('#mStatus').className='m-val '+(job.status==='completed'?'ok':job.status==='failed'?'warn':'');
+}
+function addMatrixLine(label,text,state){
+  const div=document.createElement('div');div.className='matrix-line';
+  const dotClass={pending:'',running:'run',done:'done',fail:'fail'}[state]||'';
+  div.innerHTML=`<div class="dot ${dotClass}"></div><div class="text"><b>${label}</b> ${text}</div>`;
+  $('#matrixLog').appendChild(div);div.scrollIntoView({behavior:'smooth'})
+}
+function addMeta(label,val,cls=''){
+  const cells=$$('.meta-cell');let target=null;
+  for(const c of cells){if(c.querySelector('.m-lab').textContent===label){target=c;break}}
+  if(target){target.querySelector('.m-val').textContent=val;if(cls)target.querySelector('.m-val').className='m-val '+cls}
+}
+function openReview(){setMode('review')}
+
+/* ── Timer widget ── */
+async function refreshTimer(){
+  try{
+    const d=await api('/api/generation/quota');
+    const q=d.quota;
+    const tw=$('#timerWidget'),dot=$('#twDot'),status=$('#twStatus'),text=$('#twText');
+    tw.classList.add('show');
+    if(q&&q.generation_status==='generating'){dot.className='tw-dot live';status.textContent='in progress';text.textContent='Video generation in progress';}
+    else if(q&&q.generation_status==='cooling_down'&&q.next_generation_allowed_at){
+      const end=new Date(q.next_generation_allowed_at).getTime();
+      dot.className='tw-dot';status.textContent='cooldown';text.textContent='Next video available in…';
+      const tick=()=>{const rem=end-Date.now();if(rem<=0){status.textContent='ready';text.textContent='Ready to create';dot.className='tw-dot ready';clearInterval(timerInt)}else{text.textContent='Next video available in '+formatMs(rem)}};tick();const timerInt=setInterval(tick,1000);
+    }else{dot.className='tw-dot ready';status.textContent='ready';text.textContent='Ready to create'}
+  }catch(e){}
+}
+function formatMs(ms){const s=Math.floor(ms/1000);const m=Math.floor(s/60);const sec=s%60;return m+':'+String(sec).padStart(2,'0')}
+function toggleTimerMini(){timerMini=!timerMini;$('#timerWidget').classList.toggle('mini',timerMini);$('#twMin').textContent=timerMini?'+':'−'}
+
+/* ── Review ── */
+async function loadProjects(){
+  try{const d=await api('/api/projects');renderProjects(d.projects||[])}catch(e){console.error(e)}
+}
+function renderProjects(list){
+  const empty=$('#reviewEmpty'),listEl=$('#reviewList');
+  if(!list||!list.length){empty.style.display='block';listEl.style.display='none';return}
+  empty.style.display='none';listEl.style.display='';
+  listEl.innerHTML='';
+  list.forEach(p=>{
+    const statusCls=p.status==='completed'?'chip-done':p.status==='failed'?'chip-fail':p.status==='processing'?'chip-proc':'chip-pend';
+    const el=document.createElement('div');el.className='v-item';
+    el.innerHTML=`
+      <div class="v-thumb">${p.thumbnail_path?'<img src="#" onerror="this.style.display=\'none\'">':'🎬'}</div>
+      <div class="v-info"><div class="v-title">${escapeHtml(p.title||'Untitled')}</div><div class="v-meta">${p.subject||'—'} · Class ${p.class||'—'} · ${p.selected_duration||'—'} · ${p.language||'—'}<br>${new Date(p.created_at).toLocaleDateString()} · ${p.actual_duration_text?('Actual '+p.actual_duration_text):''}</div></div>
+      <div class="v-actions"><span class="v-chip ${statusCls}">${p.status}</span>
+        ${p.status==='completed'?`<button class="btn btn-ghost btn-sm" onclick="playProject('${p.id}','${escapeHtml(p.title)}')">Play</button><button class="btn btn-ghost btn-sm" onclick="downloadProject('${p.id}')">Download</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="viewProject('${p.id}')">Details</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProject('${p.id}','${escapeHtml(p.title)}')">Delete</button></div>
+    `;
+    listEl.appendChild(el);
+  })
+}
+async function filterProjects(f,el){
+  $$('.filter-chip').forEach(c=>c.classList.remove('on'));if(el)el.classList.add('on');
+  try{
+    const d=await api('/api/projects?status='+(f==='all'?'':f));
+    renderProjects(d.projects||[]);
+  }catch(e){}
+}
+function escapeHtml(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+async function playProject(id,title){
+  const d=await api('/api/projects/'+id);
+  const url=d.project.videoUrl;
+  if(!url){toast('Video URL not available.');return}
+  const win=window.open(url,'_blank');if(!win)toast('Open in new tab blocked.');
+}
+async function downloadProject(id){
+  const d=await api('/api/projects/'+id);
+  const url=d.project.videoUrl;
+  const a=document.createElement('a');a.href=url;a.download=(d.project.title||'video')+'.mp4';a.click()
+}
+async function viewProject(id){
+  const d=await api('/api/projects/'+id);
+  const p=d.project;
+  alert('Project: '+p.title+'\nSubject: '+p.subject+'\nClass: '+p.class+'\nDuration: '+p.selected_duration+'\nActual: '+p.actual_duration_text+'\nStatus: '+p.status+'\n\nScript:\n'+(p.script||'(none)'))
+}
+async function deleteProject(id,title){
+  if(!confirm('Delete "'+title+'"?'))return;
+  try{await api('/api/projects/'+id,{method:'DELETE'});toast('Deleted.');loadProjects()}catch(e){toast(e.message)}
+}
+async function exportProject(){toast('Export: script copied.');navigator.clipboard.writeText($('#createTopic').value)}
+async function copyProject(){navigator.clipboard.writeText($('#createTopic').value);toast('Script copied.')}
+
+/* ── Settings ── */
+async function loadSettings(){
+  try{
+    const d=await api('/api/settings');
+    const prof=d.profile||{},nf=d.notifications||{};
+    $('#setDefaultClass').value=prof.default_class||'5';
+    $('#setDefaultSubject').value=prof.default_subject||'Science';
+    $('#setDefaultLang').value=prof.default_narration_language||'English';
+    $('#setDefaultSub').value=prof.default_subtitle_language||'English';
+    $('#setDefaultStyle').value=prof.default_anime_style||selectedStyle;
+  $$('#nfDashboard,#nfEmail').forEach(b=>b.classList.remove('on'));
+  const nfId=(nf&&(nf.method==='whatsapp'||nf.method==='both'))?'nfEmail':'nfDashboard';
+  $('#'+nfId).classList.add('on');
+    
+  }catch(e){}
+}
+$('#setDefaultClass').onchange=async()=>{await api('/api/settings',{method:'POST',body:JSON.stringify({default_class:$('#setDefaultClass').value})})}
+$('#setDefaultSubject').onchange=async()=>{await api('/api/settings',{method:'POST',body:JSON.stringify({default_subject:$('#setDefaultSubject').value})})}
+$('#setDefaultLang').onchange=async()=>{await api('/api/settings',{method:'POST',body:JSON.stringify({default_narration_language:$('#setDefaultLang').value})})}
+$('#setDefaultSub').onchange=async()=>{await api('/api/settings',{method:'POST',body:JSON.stringify({default_subtitle_language:$('#setDefaultSub').value})})}
+$('#setDefaultStyle').onchange=async()=>{await api('/api/settings',{method:'POST',body:JSON.stringify({default_anime_style:$('#setDefaultStyle').value})})}
+function setNotif(m){
+  const mm=(m==='whatsapp'||m==='both')?'email':m;
+  $$('#nfDashboard,#nfEmail').forEach(b=>b.classList.remove('on'));
+  $('#nf'+(mm==='email'?'Email':'Dashboard')).classList.add('on');
+  api('/api/notifications/preferences',{method:'POST',body:JSON.stringify({method:mm})});
+}
+// Phone/WhatsApp notification settings removed.
+async function viewProfile(){const d=await api('/api/auth/me');alert('Account\nEmail: '+(d.user.email||'—')+'\nID: '+d.user.id)}
+async function deleteAccount(){
+  if(!confirm('Permanently delete your account and all projects? This cannot be undone.'))return;
+  try{await api('/api/auth/account',{method:'DELETE'});toast('Account deleted.');logout()}catch(e){toast(e.message)}
+}
+
+/* ── ANI companion ── */
+function toggleAni(force){
+  const p=$('#aniPanel');if(force===undefined)p.classList.toggle('open');else p.classList.toggle('open',force)
+}
+function closeAniSuggest(){$('#aniSuggest').style.display='none'}
+async function sendAni(){
+  const input=$('#aniInput');const msg=input.value.trim();if(!msg)return;
+  input.value='';appendAni('user',msg);closeAniSuggest();
+  try{
+    const d=await api('/api/chat',{method:'POST',body:JSON.stringify({message:msg,conversationId:null})});
+    appendAni('ani',d.reply);
+    if(d.reply.toLowerCase().includes('anime learning adventure')){aniCreateCtx={question:msg,answer:d.reply};$('#aniSuggest').style.display='flex'}
+  }catch(e){appendAni('ani','Sorry, I could not reach the backend. '+e.message)}
+}
+function appendAni(role,text){
+  const body=$('#aniBody');const div=document.createElement('div');div.className='ani-msg '+role;
+  div.innerHTML=role==='ani'?`<div class="ani-avatar">ANI</div><div class="ani-bubble">${escapeHtml(text)}</div><div class="ani-meta">just now</div>`:`<div class="ani-bubble">${escapeHtml(text)}</div><div class="ani-meta">you</div>`;
+  body.appendChild(div);body.scrollTop=body.scrollHeight
+}
+function aniCreateVideo(){
+  if(!aniCreateCtx)return;
+  closeAniSuggest();toggleAni(false);setMode('create');
+  $('#createTopic').value=aniCreateCtx.question;
+  setTimeout(async()=>{
+    const elig=await api('/api/generation/eligibility');
+    if(!elig.eligible){$('#genErr').textContent=elig.message;$('#genErr').classList.add('show');return}
+    startGeneration();
+  },300)
+}
+
+/* ── Init ── */
+window.addEventListener('load',()=>{setDur('short');checkAuth();refreshTimer();setInterval(refreshTimer,30000)})
+
+</script>
+</body>
+</html>
